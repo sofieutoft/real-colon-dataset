@@ -47,6 +47,67 @@ def generate_histograms(histology, output_dir):
     adenoma_counts.to_csv(f"{output_dir}/overall_adenoma_counts.csv", index=False)
     save_histogram(adenoma_counts, "histology_class", "Adenoma vs Non-Adenoma Polyps", "Histology Class", "Number of Polyps", f"{output_dir}/overall_adenoma_histogram.png", colors=['salmon', 'lightgreen'])
 
+    # Generate per-study adenoma histograms in a 2x2 grid
+    study_ids = histology["study_id"].unique()
+    n_studies = len(study_ids)
+    cols = 2
+    rows = (n_studies + 1) // cols
+
+    fig, axes = plt.subplots(rows, cols, figsize=(10, 6 * rows), sharey=True)
+    axes = axes.flatten()
+
+    for ax, study_id in zip(axes, study_ids):
+        group = histology[histology["study_id"] == study_id]
+        study_adenoma_counts = group.groupby("histology_class").size().reset_index(name="count")
+        ax.bar(study_adenoma_counts["histology_class"], study_adenoma_counts["count"], alpha=0.7, edgecolor='black')
+        ax.set_title(f"Cohort {study_id}")
+        ax.set_xlabel("Histology Class")
+        ax.set_xticklabels(study_adenoma_counts["histology_class"], rotation=45, ha="right")
+        ax.grid(axis='y')
+
+    # Hide unused subplots
+    for ax in axes[len(study_ids):]:
+        ax.axis('off')
+
+    fig.suptitle("Adenoma vs Non-Adenoma Polyps Across Cohorts")
+    fig.tight_layout()
+    plt.savefig(f"{output_dir}/combined_adenoma_histograms.png")
+    plt.close()
+
+    # Generate per-study histology histograms
+    fig, axes = plt.subplots(2, 2, figsize=(12, 10), sharex=False)
+
+    # Flatten axes array for easy iteration
+    axes = axes.flatten()
+
+    for i, study_id in enumerate(study_ids):
+        ax = axes[i]  # Get the corresponding subplot
+        
+        # Filter data for the current study
+        group = histology[histology["study_id"] == study_id]
+        study_histology_counts = group.groupby("histology_extended").size().reset_index(name="count")
+        
+        # Create bar plot
+        ax.bar(study_histology_counts["histology_extended"], study_histology_counts["count"], edgecolor='black')
+        
+        ax.set_title(f"Histology Distribution for Cohort {study_id}")
+        ax.set_ylabel("Number of Polyps")
+        ax.grid(axis='y')
+
+        # Fix x-tick labels
+        ax.set_xticks(study_histology_counts.index)  # Use actual index positions
+        ax.set_xticklabels(study_histology_counts["histology_extended"], rotation=45, ha="right")
+
+    # Remove any unused subplots (if fewer than 4 studies exist)
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    fig.suptitle("Histology Distribution Across Cohorts", fontsize=14)
+    fig.tight_layout(rect=[0, 0, 1, 0.96])  # Leave space for the title
+    plt.savefig(f"{output_dir}/combined_histology_histograms.png")
+    plt.close()
+
+
 # ---------------------- Extract Bounding Box Ratios ----------------------
 
 def get_bbox_ratio(xml_path):
@@ -120,7 +181,7 @@ def generate_bbox_histograms(bbox_df, output_dir):
 def main():
     dataset_path = "./dataset/lesion_info.csv"
     xml_folder = "./dataset/001-004_annotations"
-    output_dir = "./polyp_characterization"
+    output_dir = "./output"
     
     histology = load_histology_data(dataset_path)
     generate_histograms(histology, output_dir)

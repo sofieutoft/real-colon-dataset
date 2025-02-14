@@ -1,6 +1,6 @@
-/output/
+/output/*
 .DS_Store
 __pycache__/
-dataset/
+/dataset/*
 test.py
 polyp_characterization/

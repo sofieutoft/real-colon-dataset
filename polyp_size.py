@@ -51,14 +51,14 @@ for i, study_id in enumerate(study_ids):
     else:
         ax.set_title(f"No data for Study {study_id}")
 
-    ax.set_title(f"Polyp Size Distribution for Study {study_id}")
+    ax.set_title(f"Polyp Size Distribution for Cohort {study_id}")
     ax.set_xlabel("Size (mm)")
     ax.set_ylabel("Number of Polyps")
     ax.grid(True)
 
 # Adjust layout
 fig.tight_layout(rect=[0, 0, 1, 0.96])
-fig.suptitle("Polyp Size Distribution Across Studies", fontsize=14)
+fig.suptitle("Polyp Size Distribution Across Cohorts", fontsize=14)
 
 # Save plot
 plt.savefig(f"{output_dir}/polyp_size_histograms.png")
