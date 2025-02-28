@@ -18,7 +18,7 @@ Update xml_folder = "./dataset/001-004_annotations" with the path to the folder 
 
 Run the script using:
 
-python3 polyp_histology.py
+`python3 polyp_histology.py`
 
 The histograms are saved to the output directory.
 
@@ -33,7 +33,7 @@ Update dataset_path = "./dataset/lesion_info.csv" with the correct path to the l
 
 Run the script using:
 
-python3 polyp_size.py
+`python3 polyp_size.py`
 
 The histograms are saved to the output directory.
 
@@ -41,7 +41,7 @@ The histograms are saved to the output directory.
 
 Ensure the following Python libraries are installed before running the scripts:
 
-pip install matplotlib numpy pandas
+`pip install matplotlib numpy pandas`
 
 ## Output
 
