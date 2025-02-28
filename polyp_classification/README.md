@@ -6,7 +6,7 @@ This directory contains scripts for analyzing the REAL-Colon dataset, focusing o
 
 ## Contents
 
-2. polyp_histology.py
+### 1. polyp_histology.py
 
 #### Description:
 Computes and saves histograms of polyp histology in the REAL-Colon dataset.
@@ -22,7 +22,7 @@ python3 polyp_histology.py
 
 The histograms are saved to the output directory.
 
-2. polyp_size.py
+### 2. polyp_size.py
 
 #### Description:
 Computes and saves histograms of polyp sizes in the REAL-Colon dataset, categorized by histology classification.
