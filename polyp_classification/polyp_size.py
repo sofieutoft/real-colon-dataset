@@ -1,3 +1,12 @@
+"""
+Compute and save histograms of the size of the polyps in the REAL-Colon dataset.
+
+Usage:
+    - Update dataset_path = "./dataset/lesion_info.csv" with the path to the lesion metadata CSV file.
+    - python3 polyp_size.py
+
+"""
+
 import os
 import matplotlib.pyplot as plt
 import numpy as np
