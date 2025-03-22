@@ -1,50 +1,13 @@
 # REAL-Colon Dataset Analysis
 
-## Overview
-
-This directory contains scripts for analyzing the REAL-Colon dataset, focusing on lesion metadata and bounding box annotations. The analyses provide statistical insights and visualizations related to polyp sizes and frame-level annotation characteristics.
+This directory contains scripts that provide statistical insights and visualizations related to the sizes and histology of polyps found in the REAL-Colon dataset.
 
 ## Contents
 
-### 1. polyp_histology.py
+### 1. Polyp Histology
 
-#### Description:
-Computes and saves histograms of polyp histology in the REAL-Colon dataset.
+The script `python3 polyp_histology.py` calculates and saves histograms depicting the distribution of polyp histologies in the REAL-Colon dataset. Before running the script, update the `dataset_path` variable to "./dataset/lesion_info.csv" to reflect the correct path to the lesion metadata CSV file. Similarly, update the `xml_folder` variable to "./dataset/001-004_annotations" for the path to the folder containing XML annotation files. The histograms are saved in the specified output directory.
 
-#### Usage:
+### 2. Polyp Size
 
-Update dataset_path = "./dataset/lesion_info.csv" with the correct path to the lesion metadata CSV file.
-Update xml_folder = "./dataset/001-004_annotations" with the path to the folder containing XML annotation files.
-
-Run the script using:
-
-`python3 polyp_histology.py`
-
-The histograms are saved to the output directory.
-
-### 2. polyp_size.py
-
-#### Description:
-Computes and saves histograms of polyp sizes in the REAL-Colon dataset, categorized by histology classification.
-
-#### Usage:
-
-Update dataset_path = "./dataset/lesion_info.csv" with the correct path to the lesion metadata CSV file.
-
-Run the script using:
-
-`python3 polyp_size.py`
-
-The histograms are saved to the output directory.
-
-## Dependencies
-
-Ensure the following Python libraries are installed before running the scripts:
-
-`pip install matplotlib numpy pandas`
-
-## Output
-
-polyp_histology.py generates histograms of polyp histology and saves them in the output directory.
-
-polyp_size.py generates histograms of polyp sizes and saves them in the output directory.
+The script `python3 polyp_size.py` generates and saves histograms of polyp sizes in the REAL-Colon dataset, categorized by histology classification. Ensure that the dataset paths are correctly set before execution to facilitate accurate data analysis.

@@ -13,11 +13,11 @@ import numpy as np
 import pandas as pd
 
 # Define output directory
-output_dir = "./output"
+output_dir = "./stats"
 os.makedirs(output_dir, exist_ok=True)
 
 # Load dataset
-histology = pd.read_csv("./dataset/lesion_info.csv")
+histology = pd.read_csv("/ssd/storage/shared/colonscopy/public_datasets/real-colon_dataset_released_v20230228/lesion_info.csv")
 
 # Define histology mapping for adenoma vs. non-adenoma
 histology_map = {

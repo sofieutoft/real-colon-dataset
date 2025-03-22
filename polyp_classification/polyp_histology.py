@@ -7,12 +7,12 @@ Usage:
     - python3 polyp_histology.py
 
 """
-
 import os
 import glob
 import pandas as pd
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
+import concurrent.futures
 
 # ---------------------- Load and Preprocess Dataset ----------------------
 
@@ -55,7 +55,7 @@ def generate_histograms(histology, output_dir):
     
     adenoma_counts = histology.groupby("histology_class").size().reset_index(name="count")
     adenoma_counts.to_csv(f"{output_dir}/overall_adenoma_counts.csv", index=False)
-    save_histogram(adenoma_counts, "histology_class", "Adenoma vs Non-Adenoma Polyps", "Histology Class", "Number of Polyps", f"{output_dir}/overall_adenoma_histogram.png", colors=['salmon', 'lightgreen'])
+    save_histogram(adenoma_counts, "histology_class", "Adenoma vs Non-Adenoma Polyps", "Histology Class", "Number of Polyps", f"{output_dir}/overall_avsna_histogram.png", colors=['salmon', 'lightgreen'])
 
     # Generate per-study adenoma histograms in a 2x2 grid
     study_ids = histology["study_id"].unique()
@@ -81,7 +81,7 @@ def generate_histograms(histology, output_dir):
 
     fig.suptitle("Adenoma vs Non-Adenoma Polyps Across Cohorts")
     fig.tight_layout()
-    plt.savefig(f"{output_dir}/combined_adenoma_histograms.png")
+    plt.savefig(f"{output_dir}/combined_avsna_histograms.png")
     plt.close()
 
     # Generate per-study histology histograms
@@ -171,16 +171,17 @@ def process_annotations(histology, xml_folder):
 
 def generate_bbox_histograms(bbox_df, output_dir):
     for hist_class in ["adenoma", "non-adenoma"]:
+
         subset = bbox_df[bbox_df["histology_class"] == hist_class]
         if subset.empty:
             print(f"Warning: No data for {hist_class}, skipping histogram.")
             continue
-        
+
         plt.figure(figsize=(10, 6))
         plt.hist(subset["bbox_ratio"], bins=20, color='blue' if hist_class == "adenoma" else 'green', edgecolor='black')
         plt.title(f"Histogram of BBox Ratio for {hist_class.capitalize()} Polyps")
         plt.xlabel("Ratio of BBox Diagonal to Image Diagonal")
-        plt.ylabel("Number of Frames")
+        plt.ylabel("Number aof Frames")
         plt.grid(axis='y')
         plt.tight_layout()
         plt.savefig(f"{output_dir}/{hist_class}_bbox_ratio_histogram.png")
@@ -189,17 +190,36 @@ def generate_bbox_histograms(bbox_df, output_dir):
 # ---------------------- Main Execution ----------------------
 
 def main():
-    dataset_path = "./dataset/lesion_info.csv"
-    xml_folder = "./dataset/001-004_annotations"
-    output_dir = "./output"
-    
-    histology = load_histology_data(dataset_path)
+    dataset_path = "/ssd/storage/shared/colonscopy/public_datasets/real-colon_dataset_released_v20230228/"
+    output_dir = "./stats"
+    os.makedirs(output_dir, exist_ok=True)
+
+    histology = load_histology_data(os.path.join(dataset_path, "lesion_info.csv"))
     generate_histograms(histology, output_dir)
-    
-    bbox_df = process_annotations(histology, xml_folder)
-    bbox_df.to_csv(f"{output_dir}/bbox_ratios.csv", index=False)
-    
-    generate_bbox_histograms(bbox_df, output_dir)
+
+    annotation_folders = [
+        os.path.join(dataset_path, folder)
+        for folder in os.listdir(dataset_path)
+        if folder.endswith("_annotations") and os.path.isdir(os.path.join(dataset_path, folder))
+    ]
+
+    # Helper to wrap the process_annotations call with histology
+    def process_folder(folder_path):
+        df = process_annotations(histology, folder_path)
+        return df if not df.empty else None
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=16) as executor:
+        results = list(executor.map(process_folder, annotation_folders))
+
+    bbox_dfs = [df for df in results if df is not None]
+
+    if bbox_dfs:
+        bbox_df = pd.concat(bbox_dfs, ignore_index=True)
+        bbox_df.to_csv(f"{output_dir}/bbox_ratios.csv", index=False)
+        generate_bbox_histograms(bbox_df, output_dir)
+    else:
+        print("No annotation data found in any _annotations folder.")
+
     print("Histograms and tables have been saved to the output directory.")
 
 if __name__ == "__main__":

@@ -111,7 +111,7 @@ def scale_bounding_box(box, original_resolution, target_resolution=(1920, 1080))
 
 def main():
     # Specify here dataset base path
-    base_dataset_path = "/path/to/dataset/folder"
+    base_dataset_path = "/ssd/storage/shared/colonscopy/public_datasets/real-colon_dataset_released_v20230228/"
     lesion_info_csv = pd.read_csv(os.path.join(base_dataset_path, "lesion_info.csv"))
     video_info_csv = pd.read_csv(os.path.join(base_dataset_path, "video_info.csv"))
 

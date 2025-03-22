@@ -28,7 +28,7 @@ def get_annotation_data(annotation_folder):
         box_in_frame_dict: A dictionary containing the following information:
             - box_in_frame_dict: A dictionary containing a value of a list of unique binding boxes for each frame
             - box_in_frame_dict[i]: The key i refers to the frame number
-            """
+    """
     print(f"Processing annotations in folder {annotation_folder}")
 
     box_in_frame_dict = {}  # Maps each frame with a list of bounding box ids in the frame
