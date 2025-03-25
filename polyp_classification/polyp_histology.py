@@ -4,7 +4,7 @@ Compute and save histograms of the histology of the polyps in the REAL-Colon dat
 Usage:
     - Update dataset_path = "./dataset/lesion_info.csv" with the path to the lesion metadata CSV file.
     - Update xml_folder = "./dataset/001-004_annotations" with the path to the folder containing XML annotation files.
-    - python3 polyp_histology.py
+    - python3 polyp_classification/polyp_histology.py
 
 """
 import os
@@ -13,10 +13,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 import concurrent.futures
-
-# ---------------------- Load and Preprocess Dataset ----------------------
+import argparse
 
 def load_histology_data(filepath):
+    """
+    Load the histology data from the given CSV file and map the histology classes to adenoma and non-adenoma.
+
+    Args:
+        filepath (str): The path to the CSV file containing the histology data.
+    
+    Returns:
+        pd.DataFrame: The histology data with the histology classes mapped to adenoma and non-adenoma.
+    """
     histology = pd.read_csv(filepath)
     histology_map = {
         "HP": "non-adenoma",
@@ -30,9 +38,22 @@ def load_histology_data(filepath):
     histology["study_id"] = histology["unique_video_name"].str[:3]
     return histology
 
-# ---------------------- Helper Function to Save Histograms ----------------------
-
 def save_histogram(data, x_col, title, xlabel, ylabel, filename, colors=None):
+    """
+    Save a histogram of the given data to the specified file.
+    
+    Args:
+        data (pd.DataFrame): The data to plot.
+        x_col (str): The column to use for the x-axis.
+        title (str): The title of the plot.
+        xlabel (str): The label for the x-axis.
+        ylabel (str): The label for the y-axis.
+        filename (str): The path to save the plot.
+        colors (list): The colors to use for the bars.
+    
+    Generates:
+        A histogram of the given data saved to the specified file.
+    """
     plt.figure(figsize=(10, 6))
     plt.bar(data[x_col], data["count"], color=colors, edgecolor='black')
     plt.title(title)
@@ -44,17 +65,28 @@ def save_histogram(data, x_col, title, xlabel, ylabel, filename, colors=None):
     plt.savefig(filename)
     plt.close()
 
-# ---------------------- Generate Histograms ----------------------
+def generate_histograms(histology, output_dir, save_csv=True):
+    """
+    Generate and save histograms based on the histology data.
 
-def generate_histograms(histology, output_dir):
+    Args:
+        histology (pd.DataFrame): The histology data to analyze.
+        output_dir (str): The directory to save the output files.
+        save_csv (bool): Whether to save the histograms to CSV files.
+    
+    Generates:
+        Histograms and optionally CSV files of the histology data.
+    """
     os.makedirs(output_dir, exist_ok=True)
     
     histology_counts = histology.groupby("histology_extended").size().reset_index(name="count")
-    histology_counts.to_csv(f"{output_dir}/overall_histology_counts.csv", index=False)
+    if save_csv:
+        histology_counts.to_csv(f"{output_dir}/overall_histology_counts.csv", index=False)
     save_histogram(histology_counts, "histology_extended", "Histogram of Polyps per Histology Class", "Histology Class", "Number of Polyps", f"{output_dir}/overall_histology_histogram.png", colors='skyblue')
     
     adenoma_counts = histology.groupby("histology_class").size().reset_index(name="count")
-    adenoma_counts.to_csv(f"{output_dir}/overall_adenoma_counts.csv", index=False)
+    if save_csv:
+        adenoma_counts.to_csv(f"{output_dir}/overall_adenoma_counts.csv", index=False)
     save_histogram(adenoma_counts, "histology_class", "Adenoma vs Non-Adenoma Polyps", "Histology Class", "Number of Polyps", f"{output_dir}/overall_avsna_histogram.png", colors=['salmon', 'lightgreen'])
 
     # Generate per-study adenoma histograms in a 2x2 grid
@@ -118,9 +150,16 @@ def generate_histograms(histology, output_dir):
     plt.close()
 
 
-# ---------------------- Extract Bounding Box Ratios ----------------------
-
 def get_bbox_ratio(xml_path):
+    """
+    Calculate the ratio of the bounding box diagonal to the image diagonal.
+
+    Args:
+        xml_path (str): The path to the XML file containing the bounding box and image size information.
+    
+    Returns:
+        float: The ratio of the bounding box diagonal to the image diagonal, or None if an error occurs.
+    """
     try:
         tree = ET.parse(xml_path)
         root = tree.getroot()
@@ -136,9 +175,18 @@ def get_bbox_ratio(xml_path):
     except:
         return None
 
-# ---------------------- Process Annotations ----------------------
 
 def process_annotations(histology, xml_folder):
+    """
+    Process the XML annotation files to calculate bounding box ratios for each polyp.
+
+    Args:
+        histology (pd.DataFrame): The histology data containing polyp information.
+        xml_folder (str): The path to the folder containing XML annotation files.
+    
+    Returns:
+        pd.DataFrame: A DataFrame containing the bounding box ratios for each polyp.
+    """
     bbox_ratios = []
     processed_polyps = set()
     lesion_filtered = histology[histology["histology_class"].isin(["adenoma", "non-adenoma"])]
@@ -167,9 +215,21 @@ def process_annotations(histology, xml_folder):
                 })
     return pd.DataFrame(bbox_ratios)
 
-# ---------------------- Generate Bounding Box Histograms ----------------------
 
 def generate_bbox_histograms(bbox_df, output_dir):
+    """
+    Generates and saves histograms of bounding box ratios for different histology classes.
+    Args:
+        bbox_df (pd.DataFrame): DataFrame containing bounding box data with a column 'histology_class' 
+                                indicating the class of the polyp and a column 'bbox_ratio' indicating 
+                                the ratio of the bounding box diagonal to the image diagonal.
+        output_dir (str): Directory where the histogram images will be saved.
+    Raises:
+        Warning: If there is no data for a specific histology class, a warning message is printed and 
+                 the histogram for that class is skipped.
+    Returns:
+        None
+    """
     for hist_class in ["adenoma", "non-adenoma"]:
 
         subset = bbox_df[bbox_df["histology_class"] == hist_class]
@@ -187,15 +247,26 @@ def generate_bbox_histograms(bbox_df, output_dir):
         plt.savefig(f"{output_dir}/{hist_class}_bbox_ratio_histogram.png")
         plt.close()
 
-# ---------------------- Main Execution ----------------------
 
-def main():
+def main(save_csv):
+    """
+    Processes histology data and generates histograms.
+
+    Args:
+        save_csv (bool): If True, saves bounding box ratios as a CSV file.
+
+    This function:
+    - Loads histology data from the dataset path.
+    - Extracts bounding box data from annotation folders.
+    - Generates and saves histograms of bounding box data.
+    - Saves extracted data as a CSV file if `save_csv` is True.
+    """
     dataset_path = "/ssd/storage/shared/colonscopy/public_datasets/real-colon_dataset_released_v20230228/"
     output_dir = "./stats"
     os.makedirs(output_dir, exist_ok=True)
 
     histology = load_histology_data(os.path.join(dataset_path, "lesion_info.csv"))
-    generate_histograms(histology, output_dir)
+    generate_histograms(histology, output_dir, save_csv)
 
     annotation_folders = [
         os.path.join(dataset_path, folder)
@@ -215,7 +286,8 @@ def main():
 
     if bbox_dfs:
         bbox_df = pd.concat(bbox_dfs, ignore_index=True)
-        bbox_df.to_csv(f"{output_dir}/bbox_ratios.csv", index=False)
+        if save_csv:
+            bbox_df.to_csv(f"{output_dir}/bbox_ratios.csv", index=False)
         generate_bbox_histograms(bbox_df, output_dir)
     else:
         print("No annotation data found in any _annotations folder.")
@@ -223,4 +295,7 @@ def main():
     print("Histograms and tables have been saved to the output directory.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Save to CSV")
+    parser.add_argument("--CSV", default=True, help="Save histology analysis to CSV files.")
+    args = parser.parse_args()
+    main(args.CSV)
